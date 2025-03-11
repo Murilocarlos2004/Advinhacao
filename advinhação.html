@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Adivinhação</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #game-container {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Jogo de Adivinhação</h1>
+        <p>Escolha o modo de jogo:</p>
+        <button onclick="startGame(1)">Fácil</button>
+        <button onclick="startGame(2)">Difícil</button>
+        <button onclick="startGame(3)">Kamikaze</button>
+        <div id="game"></div>
+    </div>
+
+    <script>
+        let maxTentativas, rodadas, perdaPorErro, numeroSecreto, tentativas, totalPontos = 0;
+        let tempoInicial, maxNumero;
+
+        function startGame(mode) {
+            if (mode === 1) {
+                maxTentativas = 10;
+                rodadas = 5;
+                perdaPorErro = 1;
+                maxNumero = 100;
+            } else if (mode === 2) {
+                maxTentativas = 5;
+                rodadas = 5;
+                perdaPorErro = 1;
+                maxNumero = 200;
+            } else {
+                maxTentativas = 10;
+                rodadas = 3;
+                perdaPorErro = 2;
+                maxNumero = 300;
+            }
+            totalPontos = 0;
+            tempoInicial = Date.now();
+            nextRound(1);
+        }
+
+        function nextRound(rodadaAtual) {
+            if (rodadaAtual > rodadas) {
+                endGame();
+                return;
+            }
+            if (rodadaAtual > 1) {
+                if (maxNumero <= 900) {
+                    maxNumero += (rodadaAtual === 2 ? 100 : 200);
+                }
+            }
+            numeroSecreto = Math.floor(Math.random() * maxNumero) + 1;
+            tentativas = maxTentativas;
+            document.getElementById('game').innerHTML = `
+                <h2>Rodada ${rodadaAtual} de ${rodadas}</h2>
+                <p>Tente adivinhar o número entre 1 e ${maxNumero}.</p>
+                <p>Tentativas restantes: <span id="tentativas">${tentativas}</span></p>
+                <input type="number" id="guess" min="1" max="${maxNumero}">
+                <button onclick="makeGuess(${rodadaAtual})">Enviar</button>
+                <p id="message"></p>
+            `;
+            document.getElementById("guess").addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    makeGuess(rodadaAtual);
+                }
+            });
+        }
+
+        function makeGuess(rodadaAtual) {
+            let guessInput = document.getElementById('guess');
+            let guess = parseInt(guessInput.value);
+            let message = document.getElementById('message');
+            
+            if (isNaN(guess) || guess < 1 || guess > maxNumero) {
+                message.textContent = `Entrada inválida! Digite um número entre 1 e ${maxNumero}.`;
+                return;
+            }
+            
+            if (guess < numeroSecreto) {
+                message.textContent = "O número é maior!";
+                tentativas -= perdaPorErro;
+            } else if (guess > numeroSecreto) {
+                message.textContent = "O número é menor!";
+                tentativas -= perdaPorErro;
+            } else {
+                let tempoDecorrido = Math.floor((Date.now() - tempoInicial) / 1000);
+                let minutos = Math.floor(tempoDecorrido / 60);
+                let segundos = tempoDecorrido % 60;
+                let pontos = tentativas;
+                totalPontos += pontos;
+                
+                document.getElementById('game').innerHTML = `
+                    <h2>Parabéns! Você acertou!</h2>
+                    <p>Você ganhou ${pontos} pontos!</p>
+                    <p>Tempo total: ${minutos} min ${segundos} seg</p>
+                    <button onclick="nextRound(${rodadaAtual + 1})">Próxima rodada</button>
+                `;
+                return;
+            }
+
+            guessInput.value = ""; // Resetar input
+            
+            if (tentativas > 0) {
+                document.getElementById('tentativas').textContent = tentativas;
+            } else {
+                document.getElementById('game').innerHTML = `
+                    <h2>Você perdeu! O número era ${numeroSecreto}.</h2>
+                    <button onclick="nextRound(${rodadaAtual + 1})">Próxima rodada</button>
+                `;
+            }
+        }
+
+        function endGame() {
+            document.getElementById('game').innerHTML = `
+                <h2>Jogo Finalizado!</h2>
+                <p>Sua pontuação total foi: ${totalPontos} pontos.</p>
+                <button onclick="location.reload()">Jogar Novamente</button>
+            `;
+        }
+    </script>
+</body>
+</html>
